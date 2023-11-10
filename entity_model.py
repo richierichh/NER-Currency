@@ -3,10 +3,21 @@ from spacy.training import Example
 import random 
 import time 
 from spacy.util import minibatch
+import tkinter as tk
+from tkinter import scrolledtext
 
-# def user_input(prompt): 
-#     prompt = input("Please enter your text prompt: ")
-#     return prompt 
+TRAIN_DATA = [
+("Check the performance of CAD bonds since last month", {"entities": [(25, 28, "currency"), (41, 51, "time_interval"), (29,34, "instrument")]}),
+("What was the closing value of USD bonds from the previous day?", {"entities": [(30, 33, "currency"), (49, 61, "time_interval"), ( 34,39, "instrument")]}),
+("Get me last week's summary for CAD bonds", {"entities": [(31, 34, "currency"), (7, 18, "time_interval"),( 35,40, "instrument")]}),
+("Provide a breakdown of USD bonds from yesterday", {"entities": [(23, 26, "currency"), (38, 47, "time_interval"),( 27,32, "instrument") ]}),
+("I want to review CAD bonds over the last night", {"entities": [(17, 20, "currency"), (36, 46,  "time_interval"),( 21,26, "instrument")]}),
+("USD bond index figures for the last week, please", {"entities": [(0, 3, "currency"), (31, 41, "time_interval"),( 4,14, "instrument")]}),
+("Show the trend for CAD bonds from last week", {"entities": [(19, 22, "currency"), (34, 43, "time_interval"),( 23,28, "instrument")]}),
+("Pull up the CAD bonds for the last month", {"entities": [(12, 15, "currency"), (30, 40, "time_interval"),( 16,21, "instrument")]}),
+("Give me USD bonds from six months ago", {"entities": [(8, 11, "currency"), (23, 37, "time_interval"),( 12,17, "instrument")]}), 
+("Give me CAD treasury bonds from a month ago", {"entities": [(8, 11, "currency"), (32, 41, "time_interval"),( 12,26, "instrument")]}), 
+] 
 
 #Add new entity labels to the NER of the Spacy Model 
 # 1. Checks if an NER component exists in the NLP pipelines and if doesn't it will create a new one 
@@ -41,35 +52,53 @@ def train_ner_model(nlp, TRAIN_DATA, batch_size=4, iterations = 50):
                 nlp.update(examples, drop=0.5, losses=losses, sgd=optimizer)
             print(losses)
 
-def main():
-   
+def process_text():
+    prompt = input_text.get("1.0", tk.END).strip() #get user input and remove any whitespace 
+    if prompt: #if there is a prompt 
+        start_time = time.time() #start the timer 
+        nlp = spacy.blank('en') #create an English NLP model 
+        nlp = add_entity_labels(nlp, TRAIN_DATA) #add the entity labels to the NLP pipeline 
+        train_ner_model(nlp, TRAIN_DATA) #train the data 
+        doc = nlp(prompt) #pass the prompt through the nlp model 
+        entities = [(ent.label_,ent.text, ) for ent in doc.ents] 
+        end_time = time.time() #end the timer after it has returned the entities 
+        time_taken = round(end_time - start_time, 2) #calculate the time taken and round 2 decimals 
+        output_text.delete("1.0", tk.END)    
+        output_text.insert(tk.END, f"Entities: {entities}\nTime taken: {time_taken} seconds")
+    else:
+            output_text.delete("1.0", tk.END )
+            output_text.insert(tk.END, "Please enter a text prompt.")
+ 
 
-    TRAIN_DATA = [
-    ("Check the performance of CAD bonds since last month", {"entities": [(25, 28, "currency"), (41, 51, "time_interval"), (29,34, "instrument")]}),
-    ("What was the closing value of USD bonds from the previous day?", {"entities": [(30, 33, "currency"), (49, 61, "time_interval"), ( 34,39, "instrument")]}),
-    ("Get me last week's summary for CAD bonds", {"entities": [(31, 34, "currency"), (7, 18, "time_interval"),( 35,40, "instrument")]}),
-    ("Provide a breakdown of USD bonds from yesterday", {"entities": [(23, 26, "currency"), (38, 47, "time_interval"),( 27,32, "instrument") ]}),
-    ("I want to review CAD bonds over the last night", {"entities": [(17, 20, "currency"), (36, 46,  "time_interval"),( 21,26, "instrument")]}),
-    ("USD bond index figures for the last week, please", {"entities": [(0, 3, "currency"), (31, 41, "time_interval"),( 4,14, "instrument")]}),
-    ("Show the trend for CAD bonds from last week", {"entities": [(19, 22, "currency"), (34, 43, "time_interval"),( 23,28, "instrument")]}),
-    ("Pull up the CAD bonds for the last month", {"entities": [(12, 15, "currency"), (30, 40, "time_interval"),( 16,21, "instrument")]}),
-    ("Give me USD bonds from six months ago", {"entities": [(8, 11, "currency"), (23, 37, "time_interval"),( 12,17, "instrument")]}), 
-    ("Give me CAD treasury bonds from a month ago", {"entities": [(8, 11, "currency"), (32, 41, "time_interval"),( 12,26, "instrument")]}), 
-    ] 
-    sentence = input("Enter your text prompt: ")
-    start_time = time.time()
-    nlp = spacy.blank('en')
-    nlp = add_entity_labels(nlp, TRAIN_DATA)
-    train_ner_model(nlp, TRAIN_DATA)
+def clear_text(): 
+    input_text.delete("1.0", tk.END)
 
-    # Test the model
+# Set up the main application window
+root = tk.Tk()
+width = 800
+height = 600 
+root.geometry(f"{width}x{height}") 
+root.title("CIBC Fixed Income Chatbot")
 
-    #sentence = "give me the CAD government bonds for the last week"
-    doc = nlp(sentence)
-    print("Entities", [(ent.text, ent.label_) for ent in doc.ents])
+# Input area
+input_label = tk.Label(root, text="Enter your text prompt:")
+input_label.pack()
+input_text = scrolledtext.ScrolledText(root, height=15, width=100) 
+input_text.pack()
 
-    end_time = time.time()
-    print(f"Time taken: {round(end_time - start_time,2)} seconds")
+# Process button
+process_button = tk.Button(root, text="Submit", command=process_text)
+process_button.pack()
 
-if __name__ == "__main__":
-    main()
+#Clear Button 
+clear_button = tk.Button(root,text="Clear", command = clear_text)
+clear_button.pack() 
+
+# Output display
+output_label = tk.Label(root, text="Output:")
+output_label.pack()
+output_text = scrolledtext.ScrolledText(root, height=20, width=100)
+output_text.pack()
+
+# Start the GUI event loop
+root.mainloop()

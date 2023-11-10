@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+</head>
+<body>
+    <form action="/submit" method="post">
+        <input type="text" name="user_input" placeholder="Type your message...">
+        <input type="submit" value="Submit">
+    </form>
+
+    <div id="history">
+        {% for entry in history %}
+            <p><strong>User:</strong> {{ entry.user }}</p>
+            <p><strong>Bot:</strong> {{ entry.bot }}</p>
+        {% endfor %}
+    </div>
+</body>
+</html>
